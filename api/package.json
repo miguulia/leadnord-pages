@@ -1,0 +1,8 @@
+{
+  "name": "leadnord-pages",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "node server.js",
+    "build": "echo 'no build needed'"
+  }
+}
