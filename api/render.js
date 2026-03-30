@@ -25,13 +25,16 @@ function r(html, key, val) {
   return html.split(`%%${key}%%`).join(val || '')
 }
 
-async function getTemplate(name) {
-  // Haetaan template Supabase Storagesta
-  const res = await fetch(`${SB_URL}/storage/v1/object/public/leadnord-pages-templates/pohja-${name}.html`, {
-    headers: { 'apikey': SB_ANON }
-  })
-  if (res.ok) return res.text()
-  return null
+// Haetaan template suoraan page_templates-taulusta kannasta
+async function getTemplate(id) {
+  const res = await fetch(
+    `${SB_URL}/rest/v1/page_templates?id=eq.${id}&select=html_content`,
+    { headers: { 'apikey': SB_ANON, 'Authorization': `Bearer ${SB_ANON}` } }
+  )
+  if (!res.ok) return null
+  const rows = await res.json()
+  if (!rows || !rows.length) return null
+  return rows[0].html_content
 }
 
 export default async function handler(req, res) {
@@ -56,11 +59,10 @@ export default async function handler(req, res) {
   const picons = PAIN_ICONS[ind] || PAIN_ICONS.default
   const initial = (page.contact_name || page.company || 'Y').charAt(0).toUpperCase()
 
-  // Hae template Storagesta tai käytä fallbackia
-  let tmpl = await getTemplate(page.template || 'A')
+  // Hae template kannasta
+  const tmpl = await getTemplate(page.template || 'A')
   if (!tmpl) {
-    // Fallback — redirect generate-functioniin
-    return res.redirect(302, `${SB_URL}/functions/v1/pages-render/${slug}`)
+    return res.status(500).send('Template not found in database')
   }
 
   let html = tmpl
